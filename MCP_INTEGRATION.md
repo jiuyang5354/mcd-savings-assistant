@@ -46,3 +46,20 @@
 - MCP 提供**真实菜单、真实价格、真实券**：省钱计算不靠编造，所有结论可被 `calculate-price` 官方验算；
 - 本地 optimizer 做**组合优化**（券叠加穷举、凑单净省判断），这是 MCP 原生能力之外的增量价值；
 - 输出形态面向普通用户：一句话需求 → 一张结论卡，吃什么、怎么点、省多少一目了然。
+
+## 5. 实测字段说明（2026-10-14）
+
+以下结构来自真实接口返回的采样（已剔除个人信息与门店定位细节），
+`src/mcsaver/menu_adapter.py` 的解析逻辑以此为准：
+
+**query-meals**：`data.categories[] = {name, meals: [{code, tags?}]}`；
+`data.meals = {code: {name, image, currentPrice（字符串，如 "34"）, originalPrice（字符串）, canWithOrder, discountType?, withOrder?}}`。
+注意：价格是字符串；`tags` 含"套餐"/"单品"等标签；实测 15 个分类、114 件餐品。
+
+**query-meal-detail**：`data = {code, name, rounds: [{id, name, quantity, maxQuantity, minQuantity, choices: [{code, name, quantity, maxQuantity, isDefault（0/1）, diffPrice, supportModify}]}], image, supportModify}`。
+`diffPrice` 形如 `"+ ¥1.5"` / `"- ¥0.5"` / `"+ ¥0"`；详情里没有套餐基准价，基准价取自 query-meals。
+
+**优惠券（available-coupons / query-store-coupons）**：`data[] = {title, couponId, couponCode, tradeDateTime（"开始-结束"，如 "2026-10-12 10:30:00-2026-10-16 23:59:59"）, products: [{productCode, productName}], promotionId}`。
+券绑定具体产品，无显式优惠金额，实际优惠以 `calculate-price` 为准。
+
+**query-nearby-stores**：`data[] = {storeCode, storeName, address, distance, businessStatus, businessStartTime, businessEndTime, reservation, ...}`。
