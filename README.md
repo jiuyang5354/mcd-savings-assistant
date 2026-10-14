@@ -13,8 +13,8 @@
 ## 安装
 
 ```bash
-git clone <本仓库地址>
-cd mc-savings-assistant
+git clone https://github.com/jiuyang5354/mcd-savings-assistant.git
+cd mcd-savings-assistant
 python3 -c "import sys; assert sys.version_info >= (3,9)"
 ```
 
