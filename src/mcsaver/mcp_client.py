@@ -2,7 +2,7 @@
 
 认证：Authorization: Bearer <TOKEN>，Token 从环境变量 MCD_MCP_TOKEN 读取，
 绝不在代码或配置文件里写明文 Token（参赛声明要求）。
-协议：Streamable HTTP JSON-RPC，endpoint https://mcp.mcd.cn/mcp。
+协议：Streamable HTTP JSON-RPC，endpoint https://mcp.mcd.cn。
 工具清单以官方仓库 M-China/mcd-mcp-server 为准。
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ import json
 import os
 import urllib.request
 
-ENDPOINT = "https://mcp.mcd.cn/mcp"
+ENDPOINT = "https://mcp.mcd.cn"
 
 
 class McpError(RuntimeError):
