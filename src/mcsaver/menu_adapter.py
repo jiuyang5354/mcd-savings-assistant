@@ -197,3 +197,39 @@ def load_samples_dir(samples_dir: str) -> tuple[list[dict], list[dict], dict]:
     menu = load_menu(categories, meals_data)
     coupons = load_coupons(coupons_raw.get("data", []))
     return menu, coupons, meals_data
+
+
+def parse_calculate_price(price_data: dict) -> dict:
+    """解析 calculate-price 返回。
+
+    注意：金额全部是“分”为单位的整数，这里统一转成元。
+    得到：{product_original_price, product_price, original_price,
+           discount, price（应付总价）,
+           items: [{code, name, quantity, original_subtotal, subtotal}],
+           takeways: [{code, title, subtitle}]}。
+    """
+    def _yuan(cents) -> float:
+        try:
+            return round(float(cents) / 100, 2)
+        except (TypeError, ValueError):
+            return 0.0
+
+    return {
+        "product_original_price": _yuan(price_data.get("productOriginalPrice")),
+        "product_price": _yuan(price_data.get("productPrice")),
+        "original_price": _yuan(price_data.get("originalPrice")),
+        "discount": _yuan(price_data.get("discount")),
+        "price": _yuan(price_data.get("price")),
+        "items": [{
+            "code": str(it.get("productCode", "")),
+            "name": it.get("productName", ""),
+            "quantity": it.get("quantity", 1),
+            "original_subtotal": _yuan(it.get("originalSubtotal")),
+            "subtotal": _yuan(it.get("subtotal")),
+        } for it in price_data.get("productList", []) or []],
+        "takeways": [{
+            "code": tw.get("code", ""),
+            "title": tw.get("title", ""),
+            "subtitle": tw.get("subtitle", ""),
+        } for tw in price_data.get("takeWayList", []) or []],
+    }

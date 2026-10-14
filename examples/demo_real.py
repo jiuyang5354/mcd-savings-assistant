@@ -3,6 +3,7 @@
 只读本地 data/real_samples/*.json，不发网络请求、不需要 Token。
 采样门店：麦当劳青岛胶州利群餐厅（storeCode 3350072）。
 """
+import json
 import os
 import sys
 
@@ -81,6 +82,20 @@ def main() -> int:
         print(f"  {cp['title']}：{cp['coupon_code']}，"
               f"有效期 {cp['valid_from']} 至 {cp['valid_to']}")
     print("  （券绑定具体产品、无显式金额，实际优惠以 calculate-price 为准）")
+
+    # (e) calculate-price 官方验算：金额单位为分，已转元
+    from mcsaver.menu_adapter import parse_calculate_price
+    calc_path = os.path.join(SAMPLES, "calculate_price_sample.json")
+    if os.path.exists(calc_path):
+        with open(calc_path, encoding="utf-8") as f:
+            calc = parse_calculate_price(json.load(f)["data"])
+        items = " + ".join(
+            f"{it['name']}{it['subtotal']} 元" for it in calc["items"])
+        print("\n【calculate-price 官方验算 · 真实返回】")
+        print(f"  {items} = 应付 {calc['price']} 元"
+              f"（优惠 {calc['discount']} 元）")
+        ways = "、".join(tw["title"] for tw in calc["takeways"])
+        print(f"  取餐方式：{ways}")
     return 0
 
 

@@ -63,3 +63,6 @@
 券绑定具体产品，无显式优惠金额，实际优惠以 `calculate-price` 为准。
 
 **query-nearby-stores**：`data[] = {storeCode, storeName, address, distance, businessStatus, businessStartTime, businessEndTime, reservation, ...}`。
+
+**calculate-price**：`data = {productOriginalPrice, productPrice, originalPrice, discount, price, productList: [{productCode, productName, quantity, originalSubtotal, subtotal}], takeWayList: [{code, title, subtitle}]}`。
+注意：金额全部是**分**为单位的整数（如 4050 = ¥40.50），`menu_adapter.parse_calculate_price` 统一转成元；`takeWayList` 如堂食（eat-in）/外带（take-in-store）。
