@@ -13,6 +13,11 @@ import urllib.request
 
 ENDPOINT = "https://mcp.mcd.cn"
 
+# 场景常量（来自官方 inputSchema 字段说明）
+ORDER_TYPE_IN_STORE = 1      # 到店（含到店自取 + 得来速）
+BE_TYPE_PICKUP = 1           # 到店取餐
+BE_TYPE_DRIVE_THRU = 5       # 得来速车道取餐
+
 
 class McpError(RuntimeError):
     pass
@@ -54,9 +59,20 @@ class McdMcp:
         """查询门店可售餐品列表（分类、餐品编码、标签）。"""
         return self.call("query-meals", {"storeCode": store_code})
 
-    def query_meal_detail(self, product_code: str) -> dict:
-        """按餐品编码查详情、套餐组成与可替换项。"""
-        return self.call("query-meal-detail", {"productCode": product_code})
+    def query_meal_detail(self, store_code: str, code: str,
+                          order_type: int = ORDER_TYPE_IN_STORE,
+                          be_type: int = BE_TYPE_PICKUP,
+                          be_code: str | None = None) -> dict:
+        """按餐品编码查详情、套餐组成与可替换项。
+
+        inputSchema：code + 门店场景参数 storeCode / orderType / beType；
+        到店自取（beType=1）时 beCode 是无效参数，传了会报错；得来速（beType=5）必传 beCode。
+        """
+        args = {"code": str(code), "storeCode": str(store_code),
+                "orderType": int(order_type), "beType": int(be_type)}
+        if be_code and be_type != BE_TYPE_PICKUP:
+            args["beCode"] = be_code
+        return self.call("query-meal-detail", args)
 
     def calculate_price(self, store_code: str, be_code: str,
                         address_id: str, items: list[dict]) -> dict:
@@ -92,9 +108,17 @@ class McdMcp:
             return self.call("campaign-calender", args)
 
     # ---- 门店与营养 ----
-    def query_nearby_stores(self, address: str) -> dict:
-        """按地址查附近麦当劳门店（拿 storeCode）。"""
-        return self.call("query-nearby-stores", {"address": address})
+    def query_nearby_stores(self, city: str, keyword: str,
+                            be_type: int = BE_TYPE_PICKUP) -> dict:
+        """按「城市 + 关键词」查门店（拿 storeCode）。
+
+        inputSchema：searchType=2（按位置搜）时 city 与 keyword 必须同传，
+        只传其一会报 600058；不接受整段地址字符串。
+        关键词可以是商圈、地标、车站，例如 city="杭州市", keyword="西湖文化广场"。
+        """
+        return self.call("query-nearby-stores", {
+            "searchType": 2, "beType": int(be_type),
+            "city": city, "keyword": keyword})
 
     def list_nutrition_foods(self) -> dict:
         """餐品营养成分（能量、蛋白质、脂肪等），可做低热量搭配。"""

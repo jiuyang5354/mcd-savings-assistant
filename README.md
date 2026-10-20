@@ -32,7 +32,7 @@ python3 - <<'EOF'
 import sys; sys.path.insert(0, "src")
 from mcsaver import McdMcp
 mcp = McdMcp()  # 从环境变量读 Token
-print(mcp.query_nearby_stores("杭州市西湖区"))
+print(mcp.query_nearby_stores("杭州市", "西湖文化广场"))
 EOF
 ```
 
