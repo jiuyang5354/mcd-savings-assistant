@@ -55,9 +55,33 @@ class McdMcp:
             raise McpError(f"调用 {tool} 失败：{e}") from e
 
     # ---- 菜单与价格 ----
-    def query_meals(self, store_code: str) -> dict:
+    @staticmethod
+    def _scene_args(store_code: str, order_type: int, be_type: int,
+                    be_code: str | None, reservation_date: str | None) -> dict:
+        """门店场景参数（query-meals / query-meal-detail / calculate-price 共用）。
+
+        inputSchema：storeCode / orderType / beType 必填；
+        到店自取（beType=1）时不传 beCode，得来速（5）/外送（orderType=2）/团餐必传；
+        reservationDate 仅预约场景传，格式 yyyy-MM-dd HH:mm。
+        """
+        args = {"storeCode": str(store_code), "orderType": int(order_type),
+                "beType": int(be_type)}
+        if be_type != BE_TYPE_PICKUP:
+            if not be_code:
+                raise McpError(f"beType={be_type} 场景必须传 beCode")
+            args["beCode"] = be_code
+        if reservation_date:
+            args["reservationDate"] = reservation_date
+        return args
+
+    def query_meals(self, store_code: str,
+                    order_type: int = ORDER_TYPE_IN_STORE,
+                    be_type: int = BE_TYPE_PICKUP,
+                    be_code: str | None = None,
+                    reservation_date: str | None = None) -> dict:
         """查询门店可售餐品列表（分类、餐品编码、标签）。"""
-        return self.call("query-meals", {"storeCode": store_code})
+        return self.call("query-meals", self._scene_args(
+            store_code, order_type, be_type, be_code, reservation_date))
 
     def query_meal_detail(self, store_code: str, code: str,
                           order_type: int = ORDER_TYPE_IN_STORE,
@@ -68,18 +92,32 @@ class McdMcp:
         inputSchema：code + 门店场景参数 storeCode / orderType / beType；
         到店自取（beType=1）时 beCode 是无效参数，传了会报错；得来速（beType=5）必传 beCode。
         """
-        args = {"code": str(code), "storeCode": str(store_code),
-                "orderType": int(order_type), "beType": int(be_type)}
-        if be_code and be_type != BE_TYPE_PICKUP:
-            args["beCode"] = be_code
+        args = self._scene_args(store_code, order_type, be_type, be_code, None)
+        args["code"] = str(code)
         return self.call("query-meal-detail", args)
 
-    def calculate_price(self, store_code: str, be_code: str,
-                        address_id: str, items: list[dict]) -> dict:
-        """按商品列表（含优惠券）计算金额、优惠与应付总价。"""
-        return self.call("calculate-price", {
-            "storeCode": store_code, "beCode": be_code,
-            "addressId": address_id, "items": items})
+    def calculate_price(self, store_code: str, items: list[dict],
+                        order_type: int = ORDER_TYPE_IN_STORE,
+                        be_type: int = BE_TYPE_PICKUP,
+                        be_code: str | None = None,
+                        reservation_date: str | None = None,
+                        need_tableware: bool | None = None) -> dict:
+        """按商品列表（含优惠券）计算金额、优惠与应付总价（金额单位：分）。
+
+        inputSchema：门店场景参数同 query-meals，另加 items；没有 addressId。
+        items 每项：productCode、quantity（>=1），用券时加 couponId / couponCode，
+        特调加 modification，套餐子项加 roundList（来自 query-meal-detail）。
+        """
+        bad = [i for i in items
+               if not i.get("productCode") or int(i.get("quantity", 0)) < 1]
+        if bad:
+            raise McpError(f"items 每项需要 productCode 且 quantity>=1：{bad}")
+        args = self._scene_args(store_code, order_type, be_type,
+                                be_code, reservation_date)
+        args["items"] = items
+        if need_tableware is not None:
+            args["needTableware"] = bool(need_tableware)
+        return self.call("calculate-price", args)
 
     # ---- 优惠券与活动 ----
     def available_coupons(self) -> dict:

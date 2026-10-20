@@ -16,13 +16,13 @@
 | Tool | 用途 | 在本项目中的调用点 |
 |---|---|---|
 | `query-nearby-stores` | 按「城市 + 关键词」查门店（`searchType=2`，`city` 与 `keyword` 同传），拿 `storeCode` | 流程起点：定位用户门店 |
-| `query-meals` | 查门店可售餐品列表（分类、编码、标签） | 拉菜单 → 喂给 optimizer |
+| `query-meals` | 按门店场景（`storeCode`/`orderType`/`beType`）查可售餐品列表（分类、编码、标签） | 拉菜单 → 喂给 optimizer |
 | `query-meal-detail` | 按 `code` + 门店场景（`storeCode`/`orderType`/`beType`）查餐品详情、套餐组成、可替换项 | 套餐 vs 单点比价时确认套餐内容 |
 | `query-store-coupons` | 查当前门店可用券 | 优惠券叠加计算的输入 |
 | `available-coupons` | 查可领取的麦麦省券 | 提醒用户先领券再点单 |
 | `my-coupons` | 查卡包已领券 | 用“用户已有券”做最优叠加 |
 | `campaign-calendar` | 当月营销活动日历 | 活动期（如 9.9 元吃堡）改写推荐策略 |
-| `calculate-price` | 官方价格验算（含券、配送费） | 方案输出前的官方复核，以其结果为准 |
+| `calculate-price` | 门店场景参数 + `items[]`（`productCode`/`quantity`，可带 `couponId`/`couponCode`）官方价格验算 | 方案输出前的官方复核，以其结果为准 |
 | `list-nutrition-foods` | 餐品营养成分 | 可选：低热量搭配模式 |
 | `now-time-info` | 服务器当前时间 | 判断早餐/午市时段券是否可用 |
 
